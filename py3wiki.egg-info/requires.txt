@@ -1,0 +1,5 @@
+webob
+webdispatch
+jinja2
+sqlalchemy
+docutils>=0.10

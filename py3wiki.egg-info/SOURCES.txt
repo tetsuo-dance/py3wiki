@@ -1,0 +1,6 @@
+setup.py
+py3wiki.egg-info/PKG-INFO
+py3wiki.egg-info/SOURCES.txt
+py3wiki.egg-info/dependency_links.txt
+py3wiki.egg-info/requires.txt
+py3wiki.egg-info/top_level.txt
