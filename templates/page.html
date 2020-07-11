@@ -1,8 +1,4 @@
-{% extends "base.html" %}
-{% block title %}{{page.page_name}}{% endblock %}
-{% block main%}
-
-{{page.html_contents}}
+{% extends "base.html" %} {% block title %}{{page.page_name}}{% endblock %} {%
+block main%} {{page.html_contents}}
 <a href="{{edit_url}}">Edit</a>
 {% endblock %}
-

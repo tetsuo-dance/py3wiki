@@ -2,7 +2,7 @@ import os
 from webob.dec import wsgify
 from webob.static import DirectoryApp
 from webob.exc import HTTPFound
-from webdispatch import URLDispatcher,MethodDispatcher
+from webdispatch import URLDispatcher, MethodDispatcher
 from wsgiref.simple_server import make_server
 
 from datetime import datetime
@@ -22,18 +22,18 @@ DBSession = orm.scoped_session(orm.sessionmaker())
 
 Base = declarative_base()
 
+
 def init_db(engine):
     DBSession.configure(bind=engine)
     Base.metadata.create_all(bind=DBSession.bind)
     try:
-       front_page = Page(page_name='FrontPage', contents="""\
-FrontPage
+        front_page = Page(page_name='TopPage', contents="""\
+TopPage
 ====================""")
-       DBSession.add(front_page)
-       DBSession.commit()
+        DBSession.add(front_page)
+        DBSession.commit()
     except IntegrityError:
-       DBSession.remove()
-
+        DBSession.remove()
 
 
 class Page(Base):
@@ -49,53 +49,69 @@ class Page(Base):
         parts = publish_parts(source=self.contents, writer_name="html")
         return parts['html_body']
 
+
 @wsgify.middleware
 def sqla_transaction(req, app):
     try:
-       res = req.get_response(app)
-       DBSession.commit()
-       return res
+        res = req.get_response(app)
+        DBSession.commit()
+        return res
     finally:
-       DBSession.remove()
+        DBSession.remove()
+
 
 @wsgify
 def page_view(request):
     page_name = request.urlvars['page_name']
-    edit_url = request.environ['webdispatch.urlgenerator'].generate('page_edit', page_name=page_name)
+    edit_url = request.environ['webdispatch.urlgenerator'].generate(
+        'page_edit', page_name=page_name)
+    search_word = dict(request.GET._items).get('search_word','')
     try:
-        page = DBSession.query(Page).filter(Page.page_name==page_name).one()
-        tmpl = env.get_template('page.html')
-        return tmpl.render(page=page, edit_url=edit_url)
+        if page_name == 'TopPage' and search_word == '':
+            tmpl = env.get_template('index.html')
+            return tmpl.render(page='Wikiへようこそ!')
+        elif page_name == 'TopPage' and search_word != '': 
+            return HTTPFound(location=search_word)
+        else:
+            page = DBSession.query(Page).filter(
+                Page.page_name == page_name).one()
+            tmpl = env.get_template('page.html')
+            return tmpl.render(page=page, edit_url=edit_url)
     except NoResultFound:
         return HTTPFound(location=edit_url)
+
 
 @wsgify
 def page_edit_form(request):
     page_name = request.urlvars['page_name']
     try:
-        page = DBSession.query(Page).filter(Page.page_name==page_name).one()
+        page = DBSession.query(Page).filter(Page.page_name == page_name).one()
     except NoResultFound:
         page = Page(page_name=page_name, contents="")
 
     tmpl = env.get_template('page_edit.html')
     return tmpl.render(page=page)
 
+
 @wsgify
 def page_update(request):
     page_name = request.urlvars['page_name']
     try:
-        page = DBSession.query(Page).filter(Page.page_name==page_name).one()
+        page = DBSession.query(Page).filter(Page.page_name == page_name).one()
     except NoResultFound:
         page = Page(page_name=page_name, contents="")
         DBSession.add(page)
 
     page.contents = request.params['contents']
-    location = request.environ['webdispatch.urlgenerator'].generate('page', page_name=page_name)
+    location = request.environ['webdispatch.urlgenerator'].generate(
+        'page', page_name=page_name)
     return HTTPFound(location=location)
+
 
 page_edit = MethodDispatcher()
 page_edit.register_app('get', page_edit_form)
 page_edit.register_app('post', page_update)
+
 
 def make_app():
     application = URLDispatcher()
@@ -108,11 +124,14 @@ def make_app():
     application.add_url('img', '/img/*', img_app)
     application.add_url('page', '/{page_name}', page_view)
     application.add_url('page_edit', '/{page_name}/edit', page_edit)
-    application.add_url('top', '/', HTTPFound(location='FrontPage'))
+    application.add_url('top', '/', HTTPFound(location='TopPage'))
+    application.add_url('toppage', '/TopPage', page_view)
     return application
 
+
 def main():
-    engine = sa.create_engine('sqlite:///{dir}/wiki.db'.format(dir=os.getcwd()))
+    engine = sa.create_engine(
+        'sqlite:///{dir}/wiki.db'.format(dir=os.getcwd()))
     engine.echo = True
     init_db(engine)
     application = make_app()

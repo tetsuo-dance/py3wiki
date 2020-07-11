@@ -1,0 +1,12 @@
+{% extends "base.html" %} {% block title %}{% endblock %} {%block main%}
+{{page.html_contents}}
+<h1>Wikiへようこそ！</h1>
+<h4>↓記事を検索する。</h4>
+<div class="input-group mb-2">
+  <form action="" method="get">
+    <input type="text" name="search_word" class="form-control" />
+    <button type="submit" class="btn btn-outline-secondary">検索</button>
+  </form>
+</div>
+
+{% endblock %}
