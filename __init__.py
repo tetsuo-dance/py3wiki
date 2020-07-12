@@ -65,13 +65,19 @@ def page_view(request):
     page_name = request.urlvars['page_name']
     edit_url = request.environ['webdispatch.urlgenerator'].generate(
         'page_edit', page_name=page_name)
-    search_word = dict(request.GET._items).get('search_word','')
+    search_word = dict(request.GET._items).get('search_word', '')
     try:
         if page_name == 'TopPage' and search_word == '':
             tmpl = env.get_template('index.html')
-            return tmpl.render(page='Wikiへようこそ!')
-        elif page_name == 'TopPage' and search_word != '': 
-            return HTTPFound(location=search_word)
+            return tmpl.render(welcome='Wikiへようこそ!', search_word='', hits={})
+        elif page_name == 'TopPage' and search_word != '':
+            tmpl = env.get_template('index.html')
+            hits = DBSession.query(Page).filter(
+                Page.contents.like("%" + search_word + "%")).all()
+            hits_page = {getattr(hits[i], "page_name"): request.environ[
+                'webdispatch.urlgenerator'].generate(
+                'page', page_name=getattr(hits[i], "page_name")) for i in range(len(hits))}
+            return tmpl.render(welcome='Wikiへようこそ!', search_word=search_word, hits=hits_page)
         else:
             page = DBSession.query(Page).filter(
                 Page.page_name == page_name).one()
@@ -81,7 +87,7 @@ def page_view(request):
         return HTTPFound(location=edit_url)
 
 
-@wsgify
+@ wsgify
 def page_edit_form(request):
     page_name = request.urlvars['page_name']
     try:
@@ -93,7 +99,7 @@ def page_edit_form(request):
     return tmpl.render(page=page)
 
 
-@wsgify
+@ wsgify
 def page_update(request):
     page_name = request.urlvars['page_name']
     try:

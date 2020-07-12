@@ -1,12 +1,25 @@
 {% extends "base.html" %} {% block title %}{% endblock %} {%block main%}
-{{page.html_contents}}
-<h1>Wikiへようこそ！</h1>
+<h1>{{welcome}}</h1>
 <h4>↓記事を検索する。</h4>
-<div class="input-group mb-2">
-  <form action="" method="get">
+<form action="" method="get">
+  <div class="input-group mb-2">
     <input type="text" name="search_word" class="form-control" />
-    <button type="submit" class="btn btn-outline-secondary">検索</button>
-  </form>
+    <div class="input-group-append">
+      <button type="submit" class="btn btn-outline-secondary">検索</button>
+    </div>
+  </div>
+</form>
+{% if search_word != '' and hits|length != 0 %}
+<div>
+  <h4>{{hits|length}}件ヒットしました。</h4>
 </div>
-
-{% endblock %}
+<ul class="list-group">
+  {% for page,url in hits.items() %}
+  <li class="list-group-item"><a href="{{url}}">{{page}}</a></li>
+  {% endfor %}
+</ul>
+{% elif search_word != '' and hits|length == 0 %}
+<div>
+  <h4>記事がヒットしませんでした。</h4>
+</div>
+{% endif %} {% endblock %}
